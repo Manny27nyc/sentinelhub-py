@@ -5,7 +5,7 @@ from .constants import MimeType, RequestType
 from .data_collections import DataCollection
 from .download import DownloadRequest, SentinelHubDownloadClient
 from .data_request import DataRequest
-from .sentinelhub_request import SentinelHubRequest
+from .sentinelhub_request import SentinelHubRequest, InputDataDict
 from .geometry import Geometry, BBox
 from .time_utils import parse_time_interval, serialize_time
 
@@ -87,4 +87,13 @@ class SentinelHubStat(DataRequest):
         raise NotImplementedError
 
     def _get_request_url(self):
-        return f'{self.config.sh_base_url}/api/v1/statistics'
+        data_collection_urls = tuple({
+            input_data_dict.service_url for input_data_dict in self.payload['input']['data']
+            if isinstance(input_data_dict, InputDataDict) and input_data_dict.service_url is not None
+        })
+        if len(data_collection_urls) > 1:
+            raise ValueError(f'Given data collections are restricted to different services: {data_collection_urls}\n'
+                             f'Try defining data collections without these restrictions')
+
+        base_url = data_collection_urls[0] if data_collection_urls else self.config.sh_base_url
+        return f'{base_url}/api/v1/statistics'
