@@ -29,7 +29,7 @@ class SentinelHubStatDownloadClient(SentinelHubDownloadClient):
         request_path, response_path = request.get_storage_paths()
 
         download_required = self.redownload or response_path is None or not os.path.exists(response_path)
-        if self.redownload or response_path is None or not os.path.exists(response_path):
+        if download_required:
             response_content = self._execute_download(request)
             stats_response = decode_data_function(response_content, request.data_type)
         else:
@@ -40,10 +40,10 @@ class SentinelHubStatDownloadClient(SentinelHubDownloadClient):
             if self._has_retriable_error(stat_info):
                 failed_time_intervals[index] = stat_info['interval']
 
-        fixed_count = 0
+        n_succeeded_intervals = 0
         if failed_time_intervals:
             retried_responses = self._download_per_interval(request, failed_time_intervals)
-            fixed_count = sum('error' not in stat_info for stat_info in retried_responses.values())
+            n_succeeded_intervals = sum('error' not in stat_info for stat_info in retried_responses.values())
 
             stats_response['data'] = [
                 retried_responses.get(index, stat_info) for index, stat_info in enumerate(stats_response['data'])
@@ -53,7 +53,7 @@ class SentinelHubStatDownloadClient(SentinelHubDownloadClient):
             request_info = request.get_request_params(include_metadata=True)
             write_data(request_path, request_info, data_format=MimeType.JSON)
 
-        if request.save_response and (download_required or fixed_count > 0):
+        if request.save_response and (download_required or n_succeeded_intervals > 0):
             write_data(response_path, stats_response, data_format=request.data_type)
 
         if request.return_data:
