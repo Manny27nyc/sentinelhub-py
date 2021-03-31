@@ -17,7 +17,12 @@ class SentinelHubStatDownloadClient(SentinelHubDownloadClient):
     Besides a normal download from Sentinel Hub services it implements an additional process of retrying and caching
     """
     _RETIRABLE_ERRORS = ['EXECUTION_ERROR', 'TIMEOUT']
-    _RETRY_NUM = 1
+
+    def __init__(self, *args, n_interval_retries=1, max_retry_threads=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.n_interval_retries = n_interval_retries
+        self.max_retry_threads = max_retry_threads
 
     def _single_download(self, request, _):
         """ Method for downloading a single request
@@ -69,7 +74,7 @@ class SentinelHubStatDownloadClient(SentinelHubDownloadClient):
             interval_request.post_values['aggregation']['timeRange'] = time_interval
             interval_requests.append(interval_request)
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_retry_threads) as executor:
             stat_info_responses = list(executor.map(self._execute_single_stat_download, interval_requests))
 
         return {index: stat_info for index, stat_info in zip(time_intervals, stat_info_responses)}
@@ -77,12 +82,12 @@ class SentinelHubStatDownloadClient(SentinelHubDownloadClient):
     def _execute_single_stat_download(self, request):
         """ Makes sure a download for a single time interval is retried
         """
-        for retry_count in range(self._RETRY_NUM):
+        for retry_count in range(self.n_interval_retries):
             response = self._execute_download(request)
             stat_response = decode_data_function(response, request.data_type)
             stat_info = stat_response['data'][0]
 
-            if not self._has_retriable_error(stat_info) or retry_count == self._RETRY_NUM - 1:
+            if not self._has_retriable_error(stat_info) or retry_count == self.n_interval_retries - 1:
                 return stat_info
 
         raise ValueError('No retries done')
