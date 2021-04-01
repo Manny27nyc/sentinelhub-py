@@ -18,7 +18,7 @@ class SentinelHubStatDownloadClient(SentinelHubDownloadClient):
     """
     _RETIRABLE_ERRORS = ['EXECUTION_ERROR', 'TIMEOUT']
 
-    def __init__(self, *args, n_interval_retries=1, max_retry_threads=None, **kwargs):
+    def __init__(self, *args, n_interval_retries=1, max_retry_threads=5, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.n_interval_retries = n_interval_retries
