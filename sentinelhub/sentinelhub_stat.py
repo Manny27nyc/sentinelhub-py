@@ -3,7 +3,8 @@ Implementation of Sentinel Hub Stat API interface
 """
 from .constants import MimeType, RequestType
 from .data_collections import DataCollection
-from .download import DownloadRequest, SentinelHubDownloadClient
+from .download import DownloadRequest
+from .download.sentinelhub_stat_client import SentinelHubStatDownloadClient
 from .data_request import DataRequest
 from .sentinelhub_request import SentinelHubRequest, InputDataDict
 from .geometry import Geometry, BBox
@@ -26,7 +27,7 @@ class SentinelHubStat(DataRequest):
             calculations=calculations
         )
 
-        super().__init__(SentinelHubDownloadClient, **kwargs)
+        super().__init__(SentinelHubStatDownloadClient, **kwargs)
 
     def create_request(self):
         """ Prepares a download request
