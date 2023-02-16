@@ -3,3 +3,4 @@ sphinx_rtd_theme
 nbsphinx
 matplotlib
 ipython
+numpy>=1.22.2 # not directly required, pinned by Snyk to avoid a vulnerability
